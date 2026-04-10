@@ -1,0 +1,11 @@
+submission_id,team_id,team_name,problem_id,problem_name,status,submit_time
+1,T1,Alpha,A,签到题,WA,2026-04-09 09:01:00
+2,T2,Beta,A,签到题,AC,2026-04-09 09:03:00
+3,T1,Alpha,A,签到题,AC,2026-04-09 09:05:00
+4,T3,Gamma,B,图论,WA,2026-04-09 09:06:00
+5,T2,Beta,B,图论,TLE,2026-04-09 09:08:00
+6,T3,Gamma,B,图论,AC,2026-04-09 09:10:00
+7,T1,Alpha,C,动态规划,RE,2026-04-09 09:12:00
+8,T1,Alpha,C,动态规划,AC,2026-04-09 09:18:00
+9,T2,Beta,C,动态规划,WA,2026-04-09 09:20:00
+10,T2,Beta,C,动态规划,AC,2026-04-09 09:26:00
