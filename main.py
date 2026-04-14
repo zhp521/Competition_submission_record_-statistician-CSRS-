@@ -1,6 +1,7 @@
 import csv
 from dataclasses import dataclass
 from datetime import datetime
+from collections import defaultdict
 
 TIME_FORMAT="%Y-%m-%d %H:%M:%S"
 
@@ -113,60 +114,153 @@ def count_first_ac_time(submissions:list[Submission]) -> dict[str,datetime]:
     return result
 
 #汇总成总分析函数
-def analyze_submissions(submissions: list[Submission]) -> dict:
-    result = {}
+# def analyze_submissions(submissions: list[Submission]) -> dict:
+#     result = {}
 
-    result["problem_counts"] = count_problem_submissions(submissions)
-    result["problem_accepted"] = count_problem_accepted(submissions)
-    result["first_ac_time"] = count_first_ac_time(submissions)
-    result["team_counts"] = count_team_submissions(submissions)
-    result["team_solved"] = count_team_solved_problem(submissions)
+#     result["problem_counts"] = count_problem_submissions(submissions)
+#     result["problem_accepted"] = count_problem_accepted(submissions)
+#     result["first_ac_time"] = count_first_ac_time(submissions)
+#     result["team_counts"] = count_team_submissions(submissions)
+#     result["team_solved"] = count_team_solved_problem(submissions)
 
-    return result
+#     return result
+
+def analyze_submissions(submissions:list[Submission]) -> dict:
+    problem_stats:dict[str,dict[str,object]]={} # 存每题统计
+    team_stats:dict[str,dict[str,object]]={} # 存每队统计
+    first_ac_records:dict[str,Submission]={} # 直接存“首个 AC 的那条提交记录”
+    team_problem_solved:dict[str,set[str]]=defaultdict(set) #用来去重，避免同一队伍同一题重复算通过题数
+
+    for submission in submissions:
+        problem_key=submission.problem_id
+
+        if problem_key not in problem_stats:
+            problem_stats[problem_key]={
+                "problem_name":submission.problem_name,
+                "submission_count":0,
+                "accepted_count":0,
+                "first_accepted_time":None
+            }
+        
+        if submission.team_id not in team_stats:
+            team_stats[submission.team_id]={
+                "team_name":submission.team_name,
+                "submission_count":0,
+                "accepted_count":0,
+                "solved_count":0
+            }
+        
+        problem_stats[problem_key]['submission_count']+=1
+        team_stats[submission.team_id]['submission_count']+=1
+
+        if submission.status=="AC":
+            problem_stats[problem_key]["accepted_count"]+=1
+            team_stats[submission.team_id]['accepted_count']+=1
+
+            if problem_stats[problem_key]["first_accepted_time"] is None:
+                problem_stats[problem_key]["first_accepted_time"] = submission.submit_time
+                first_ac_records[problem_key] = submission
+            
+            if problem_key not in team_problem_solved[submission.team_id]:
+                team_problem_solved[submission.team_id].add(problem_key)
+                team_stats[submission.team_id]["solved_count"] += 1
+    return {
+        "problem_stats": problem_stats,
+        "team_stats": team_stats,
+        "first_ac_records": first_ac_records,
+    }
 
 #打印题目统计（格式更改，变得更好看了）
-def print_problem_stats(result:dict) -> None:
-    print("==题目统计==")
+# def print_problem_stats(result:dict) -> None:
+#     print("==题目统计==")
 
-    problem_counts = result["problem_counts"]
-    problem_accepted = result["problem_accepted"]
-    first_ac_time = result["first_ac_time"]
+#     problem_counts = result["problem_counts"]
+#     problem_accepted = result["problem_accepted"]
+#     first_ac_time = result["first_ac_time"]
 
-    for problem_id in problem_counts:
-        submit_count=problem_counts.get(problem_id,0)
-        accepted_count=problem_accepted.get(problem_id,0)
-        first_time = first_ac_time.get(problem_id)
+#     for problem_id in problem_counts:
+#         submit_count=problem_counts.get(problem_id,0)
+#         accepted_count=problem_accepted.get(problem_id,0)
+#         first_time = first_ac_time.get(problem_id)
+
+#         if first_time is None:
+#             first_time_text="暂无通过"
+#         else:
+#             first_time_text=first_time.strftime(TIME_FORMAT)
+#         print(
+#             f"题目 {problem_id}: 提交 {submit_count} 次，"
+#             f"通过 {accepted_count} 次，"
+#             f"首次通过时间 {first_time_text}"
+#         )
+
+def print_problem_stats(problem_stats: dict[str, dict[str, object]]) -> None:
+    print("=== 题目统计 ===")
+
+    for problem_id, stats in sorted(problem_stats.items()): #按照题目的序号排序
+        first_time = stats["first_accepted_time"]
 
         if first_time is None:
-            first_time_text="暂无通过"
+            first_time_text = "暂无通过"
         else:
-            first_time_text=first_time.strftime(TIME_FORMAT)
+            first_time_text = first_time.strftime(TIME_FORMAT)
+
         print(
-            f"题目 {problem_id}: 提交 {submit_count} 次，"
-            f"通过 {accepted_count} 次，"
+            f"题目 {problem_id} ({stats['problem_name']}): "
+            f"提交 {stats['submission_count']} 次, "
+            f"通过 {stats['accepted_count']} 次, "
             f"首次通过时间 {first_time_text}"
         )
 
+
 #打印队伍统计
-def print_team_stats(result:dict) -> None:
-    print("==队伍统计==")
+# def print_team_stats(result:dict) -> None:
+#     print("==队伍统计==")
 
-    team_counts = result["team_counts"]
-    team_solved = result["team_solved"]
+#     team_counts = result["team_counts"]
+#     team_solved = result["team_solved"]
 
-    for team_id in team_counts:
-        submit_count=team_counts.get(team_id,0)
-        solved_count = team_solved.get(team_id, 0)
+#     for team_id in team_counts:
+#         submit_count=team_counts.get(team_id,0)
+#         solved_count = team_solved.get(team_id, 0)
 
-        print(f"队伍 {team_id}: 提交 {submit_count} 次，通过题数 {solved_count}")
+#         print(f"队伍 {team_id}: 提交 {submit_count} 次，通过题数 {solved_count}")
+
+def print_team_stats(team_stats: dict[str, dict[str, object]]) -> None:
+    print("\n=== 队伍统计 ===")
+
+    for team_id, stats in sorted(team_stats.items()):
+        print(
+            f"队伍 {team_id} ({stats['team_name']}): "
+            f"提交 {stats['submission_count']} 次, "
+            f"通过记录 {stats['accepted_count']} 次, "
+            f"通过题数 {stats['solved_count']}"
+        )
+
+# 首个“AC”队伍输出
+def print_first_ac_records(first_ac_records: dict[str, Submission]) -> None:
+    print("\n=== 首次通过记录 ===")
+
+    if not first_ac_records:
+        print("暂无 AC 记录")
+        return
+
+    for problem_id, submission in sorted(first_ac_records.items()):
+        print(
+            f"题目 {problem_id} 首次通过: "
+            f"{submission.team_name} 于 {submission.submit_time.strftime(TIME_FORMAT)} 提交通过"
+        )
 
 def main():
     submissions=load_submissions("sample_data/submissions.csv")
     result=analyze_submissions(submissions)
     
-    print_problem_stats(result)
-    print()
-    print_team_stats(result)
+    # print_problem_stats(result)
+    # print()
+    # print_team_stats(result)
+
+    print_problem_stats(result["problem_stats"])
+    print_team_stats(result["team_stats"])
+    print_first_ac_records(result["first_ac_records"])
 
 if __name__=="__main__":
     main()
